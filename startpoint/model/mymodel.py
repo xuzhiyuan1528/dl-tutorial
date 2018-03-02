@@ -3,9 +3,9 @@ import tensorflow as tf
 
 class MyModel(tf.keras.Model):
 
-    def __init__(self):
-        super(MyModel, self).__init__()
+    def __init__(self, inputs, outputs):
 
+        super().__init__(inputs, outputs)
         self._input_shape = [-1, 28, 28, 1]
 
         self.conv1 = tf.layers.Conv2D(

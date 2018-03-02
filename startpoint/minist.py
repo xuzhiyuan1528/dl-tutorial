@@ -22,8 +22,8 @@ def validate_batch_size(batch_size):
 
 
 def model_fn(features, labels, mode, params):
-    model = MyModel()
     image = features
+    model = MyModel(image, None)
     if isinstance(image, dict):
         image = features['image']
 
