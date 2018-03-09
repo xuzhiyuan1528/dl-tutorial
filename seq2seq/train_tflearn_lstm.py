@@ -43,10 +43,8 @@ def main():
     # trainX, trainY = train
     # testX, testY = test
 
-    trainX, trainY = generate_seq(1000)
+    trainX, trainY = generate_seq(20000)
     testX, testY = generate_seq(100)
-
-
 
     # Data preprocessing
     # NOTE: Padding is required for dimension consistency. This will pad sequences
@@ -65,15 +63,33 @@ def main():
     # Masking is not required for embedding, sequence length is computed prior to
     # the embedding op and assigned as 'seq_length' attribute to the returned Tensor.
     # net = tflearn.embedding(net, input_dim=10000, output_dim=128)
-    net = tflearn.lstm(net, 128, dropout=0.8, dynamic=True)
+    net_lstm, states = tflearn.lstm(net, 128, dropout=0.8, dynamic=True, return_state=True)
+    print('s', states)
+    net = tflearn.fully_connected(net_lstm, 512, activation='relu')
+    net = tflearn.fully_connected(net, 256, activation='relu')
+    net = tflearn.fully_connected(net, 128, activation='relu')
+    net = tflearn.fully_connected(net, 64, activation='relu')
     net = tflearn.fully_connected(net, 1, activation='linear')
-    net = tflearn.regression(net, optimizer='adam', learning_rate=0.001,
-                             loss='mean_square')
+    net = tflearn.regression(net, optimizer='adam', learning_rate=0.01,
+                             loss='mean_square',  metric='R2')
 
     # Training
-    model = tflearn.DNN(net, tensorboard_verbose=0)
-    model.fit(trainX, trainY, validation_set=(testX, testY), show_metric=True,
-              batch_size=32)
+    model = tflearn.DNN(net)
+    # model.fit(trainX, trainY, validation_set=(testX, testY), batch_size=128, n_epoch=20, show_metric=True)
+    # model.save('./mod.ckpt')
+
+    model.load('./mod.ckpt')
+
+    model2 = tflearn.DNN(states[1], session=model.session)
+
+    print(testX[:2])
+    print(model.predict(testX[:2]))
+
+    a = [[[10]]+[[0]]*9]
+    print(a)
+    print(model.predict(a))
+    print(model2.predict(a))
+
 
 if __name__ == '__main__':
     main()
