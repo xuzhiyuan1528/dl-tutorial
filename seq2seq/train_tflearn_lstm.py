@@ -21,17 +21,18 @@ from tflearn.datasets import imdb
 import tensorflow as tf
 import numpy as np
 
-def generate_seq(num_samples):
+def generate_seq(num_samples, length, channal):
     seq = []
     tar = []
     for _ in range(num_samples):
-        rd = np.random.randint(1,50)
-        tmp = list(range(rd, rd+10))
-        seq += tmp
-        tar.append(sum(tmp))
+        for _ in range(channal):
+            rd = np.random.randint(1,50)
+            tmp = list(range(rd, rd+length))
+            seq += tmp
+            tar.append(sum(tmp))
 
-    seq = np.array(seq).reshape((-1, 10, 1))
-    tar = np.array(tar).reshape((-1, 1))
+    seq = np.transpose(np.array(seq).reshape((-1, channal, length)), axes=(0, 2, 1))
+    tar = np.array(tar).reshape((-1, channal))
 
     return seq, tar
 
@@ -43,8 +44,10 @@ def main():
     # trainX, trainY = train
     # testX, testY = test
 
-    trainX, trainY = generate_seq(20000)
-    testX, testY = generate_seq(100)
+    trainX, trainY = generate_seq(20000, 10, 5)
+    testX, testY = generate_seq(100, 10, 5)
+
+    # print(trainX[:2], trainY[:2])
 
     # Data preprocessing
     # NOTE: Padding is required for dimension consistency. This will pad sequences
@@ -59,26 +62,26 @@ def main():
     # testY = to_categorical(testY, 2)
 
     # Network building
-    net = tflearn.input_data([None, 10, 1])
+    net = tflearn.input_data([None, 10, 5])
     # Masking is not required for embedding, sequence length is computed prior to
     # the embedding op and assigned as 'seq_length' attribute to the returned Tensor.
     # net = tflearn.embedding(net, input_dim=10000, output_dim=128)
     net_lstm, states = tflearn.lstm(net, 128, dropout=0.8, dynamic=True, return_state=True)
-    print('s', states)
+    print('s', net_lstm)
     net = tflearn.fully_connected(net_lstm, 512, activation='relu')
     net = tflearn.fully_connected(net, 256, activation='relu')
     net = tflearn.fully_connected(net, 128, activation='relu')
     net = tflearn.fully_connected(net, 64, activation='relu')
-    net = tflearn.fully_connected(net, 1, activation='linear')
+    net = tflearn.fully_connected(net, 5, activation='linear')
     net = tflearn.regression(net, optimizer='adam', learning_rate=0.01,
                              loss='mean_square',  metric='R2')
 
     # Training
     model = tflearn.DNN(net)
-    # model.fit(trainX, trainY, validation_set=(testX, testY), batch_size=128, n_epoch=20, show_metric=True)
-    # model.save('./mod.ckpt')
+    model.fit(trainX, trainY, validation_set=(testX, testY), batch_size=128, n_epoch=20, show_metric=True)
+    model.save('./mod.ckpt')
 
-    model.load('./mod.ckpt')
+    # model.load('./mod.ckpt')
 
     model2 = tflearn.DNN(states[1], session=model.session)
 
